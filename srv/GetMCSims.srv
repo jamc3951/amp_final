@@ -1,4 +1,0 @@
-string id
----
-float32[] rewards
-int32[] results

@@ -1,0 +1,29 @@
+<launch>
+    <arg name="debug" value="false"/>
+    
+    <arg name="launch_prefix" if="$(arg debug)" default="gdb -ex run --args"/>
+    <arg name="launch_prefix" unless="$(arg debug)" default=""/>
+    <arg name="policy_package" value="policy"/>
+
+    <arg name="joy_dev" default="/dev/input/js0
+"/>
+    
+    <group ns="policy">
+    	   <node pkg="amp_final" type="PolicyServer.py" name="policy_server" output="screen">
+	   	 <param name="policy" value="$(find amp_final)/$(arg policy_package)" />
+		 <remap from="state" to="/state" />
+	   </node>
+    </group>
+    <group ns="controller">
+    	    <node pkg="amp_final" type="Controller.py" name="controller" output="screen">
+	    	  <remap from="dem" to="/policy/dem"/>
+		  <remap from="pose" to="/pose"/>
+		  <remap from="state" to="/state"/>
+		  <remap from="current_goal" to="/policy/current_goal"/>
+		  <remap from="hazmap" to="/policy/hazmap"/>
+		  <remap from="current_steer" to="/policy/current_steer"/>
+		<remap from="policy" to="/policy/policy"/>
+	    </node>
+    </group>
+    
+</launch>

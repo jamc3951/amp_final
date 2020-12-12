@@ -23,32 +23,17 @@ add_message_files(
   Steering.msg
   RobotState.msg
   NamedGoal.msg
-  part_id.msg
   GoalComplete.msg
-  Callout.msg
   Policy.msg
-  OptionSelect.msg
   pythonList.msg
-  Survey.msg
   Hazard.msg
-  Mouse.msg
-  PrevTraverse.msg
-  TraverseDecision.msg
 )
 
 add_service_files(
   FILES
   GetGoalList.srv
   SetCurrentGoal.srv
-  Teleport.srv
-  SetFuelLevel.srv
-  ShowToast.srv
-  GetMCSims.srv
-  GetPaths.srv
-  GetResults.srv
-  Bins.srv
-  GetPerf.srv
-  SetCurrentHazard.srv
+  GetAction.srv
 )
 
 ## System dependencies are found with CMake's conventions

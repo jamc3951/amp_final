@@ -5,7 +5,7 @@ import math
 import matplotlib.pyplot as plt
 
 
-def rrt(obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol):
+def rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol):
 	rrt_nodes = []
 	rrt_nodes.append([start, 1])
 	count = 0
@@ -26,7 +26,7 @@ def rrt(obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol):
 			
 
 		guess = 0
-		nnCost = 1000
+		nnCost = 1000000
 
 		for i in range(0,n):
 			cost = distance(rrt_nodes[i], sample)
@@ -167,6 +167,133 @@ def plot(obstacle_map, rrt_nodes, start, goal):
 		plt.plot([path[i][0],path[i+1][0]],[path[i][1],path[i+1][1]],'g')
 
 	plt.show()
+
+def plotMDP(obstacle_map, rrt_nodes, start, goal, title):
+	plt.title(title)
+	plt.xlabel('X [Units]')
+	plt.ylabel('Y [Units]')
+	plt.ylim(4097, 0)
+	plt.xlim(0, 4097)
+	
+
+
+	for item in rrt_nodes:
+		plt.plot(item[0][0],item[0][1],'r.')
+
+	for obstacle in obstacle_map:
+		for i in range(0,len(obstacle)):
+			if i == len(obstacle)-1:
+				plt.plot([obstacle[len(obstacle)-1][0],obstacle[0][0]],[obstacle[len(obstacle)-1][1],obstacle[0][1]],'b')
+				break
+
+			plt.plot([obstacle[i][0],obstacle[i+1][0]],[obstacle[i][1],obstacle[i+1][1]],'b')
+	#Plot all branches
+	for i in range(0,len(rrt_nodes)-1):
+		index = rrt_nodes[i][1]
+		plt.plot([rrt_nodes[i][0][0],rrt_nodes[index][0][0]],[rrt_nodes[i][0][1],rrt_nodes[index][0][1]],'r')
+
+	#Plot path
+	path = find_path(rrt_nodes,start,goal)
+	for i in range(0,len(path)-1):
+		plt.plot([path[i][0],path[i+1][0]],[path[i][1],path[i+1][1]],'g')
+
+	#Make start, end noticable
+	plt.plot(start[0], start[1],'g.',markersize=10)
+	plt.text(goal[0], goal[1],'A',fontsize=20)
+
+	plt.show()
+
+def plotIterMDP(obstacle_map, rrt_nodes, start, itergoal, goal,goalID, title):
+	plt.title(title)
+	plt.xlabel('X [Units]')
+	plt.ylabel('Y [Units]')
+	plt.ylim(4097, 0)
+	plt.xlim(0, 4097)
+	
+	for item in rrt_nodes:
+		plt.plot(item[0][0],item[0][1],'r.')
+
+	for obstacle in obstacle_map:
+		for i in range(0,len(obstacle)):
+			if i == len(obstacle)-1:
+				plt.plot([obstacle[len(obstacle)-1][0],obstacle[0][0]],[obstacle[len(obstacle)-1][1],obstacle[0][1]],'b')
+				break
+
+			plt.plot([obstacle[i][0],obstacle[i+1][0]],[obstacle[i][1],obstacle[i+1][1]],'b')
+	#Plot all branches
+	for i in range(0,len(rrt_nodes)-1):
+		index = rrt_nodes[i][1]
+		plt.plot([rrt_nodes[i][0][0],rrt_nodes[index][0][0]],[rrt_nodes[i][0][1],rrt_nodes[index][0][1]],'r')
+
+	#Plot path
+	path = find_path(rrt_nodes,start,itergoal)
+	for i in range(0,len(path)-1):
+		plt.plot([path[i][0],path[i+1][0]],[path[i][1],path[i+1][1]],'g')
+
+	#Make start, end noticable
+	plt.plot(start[0], start[1],'g.',markersize=10)
+	plt.text(goal[0], goal[1],goalID,fontsize=20)
+
+	plt.show()
+
+def plotOverallMDP(obstacle_map, rrt_nodes, path, start, goal,goalID, title):
+	plt.title(title)
+	plt.xlabel('X [Units]')
+	plt.ylabel('Y [Units]')
+	plt.ylim(4097, 0)
+	plt.xlim(0, 4097)
+
+	for iterem in rrt_nodes:
+		for item in iterem:
+			plt.plot(item[0][0],item[0][1],'r.')
+
+	for obstacle in obstacle_map:
+		for i in range(0,len(obstacle)):
+			if i == len(obstacle)-1:
+				plt.plot([obstacle[len(obstacle)-1][0],obstacle[0][0]],[obstacle[len(obstacle)-1][1],obstacle[0][1]],'b')
+				break
+
+			plt.plot([obstacle[i][0],obstacle[i+1][0]],[obstacle[i][1],obstacle[i+1][1]],'b')
+	#Plot all branches
+	for iterem in rrt_nodes:
+		for i in range(0,len(iterem)-1):
+			index = iterem[i][1]
+			plt.plot([iterem[i][0][0],iterem[index][0][0]],[iterem[i][0][1],iterem[index][0][1]],'r')
+
+	#Plot path
+	#path = find_path(rrt_nodes,start,goal)
+	for iterem in path:
+		for i in range(0,len(iterem)-1):
+			plt.plot([iterem[i][0],iterem[i+1][0]],[iterem[i][1],iterem[i+1][1]],'g')
+
+	#Make start, end noticable
+	plt.plot(start[0], start[1],'g.',markersize=10)
+	plt.text(goal[0], goal[1],goalID,fontsize=20)
+
+	plt.show()
+
+
+def kinematic_rrt():
+	# Inputs: velocity, turning angle
+	pass
+
+
+def rk4(initial, fun, h, t):
+	n = float(t)/float(h+1)
+	states = []
+	states.append(initial)
+
+	for i in range(1,len(t)):
+		step = (i-1)*h
+		k1 = h*fun(step,states[i-1])
+		k2 = h
+		k3 = h*fun(step,states[i-1])
+		k4 = h
+		states.append(states[i-1] + float(1)/flaot(6)*(k1 + 2*k2 + 2*k3 + k4))
+
+	return states
+
+
 if __name__ == '__main__':
 	'''O1 = np.array(np.mat('1 1; 2 1; 2 5; 1 5'));
 	O2 = np.array(np.mat('3 4; 4 4; 4 12; 3 12'));
@@ -187,12 +314,12 @@ if __name__ == '__main__':
 	O6 = np.array(np.mat('14 -5; 15 -5; 15 1; 14 1'));
 	O7 = np.array(np.mat('19 0; 20 0; 20 5; 19 5'));
 	O8 = np.array(np.mat('24 -5; 25 -5; 25 1; 24 1'));
-	O9 = np.array(np.mat('29 0; 30 0; 30 5; 29 5'));
+	O9 = np.array([[29, 0], [30, 0], [30, 5], [29, 5]]);
 	obstacle_map = [O1, O2, O3, O4, O5, O6, O7, O8, O9]
 	size_x = (-6,36)
 	size_y = (-6,6)
 	start = (0,0)
 	goal = (35,0)
 
-	rrt_nodes = rrt(obstacle_map,size_x,size_y,5000,0.5,0.05,start,goal,0.25)
+	rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,5000,0.5,0.05,start,goal,0.25)
 	plot(obstacle_map,rrt_nodes, start, goal)

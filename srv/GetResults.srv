@@ -1,6 +1,0 @@
-string id
-string temporal
----
-float32[] actions
-float32 reward
-int32 result
