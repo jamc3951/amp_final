@@ -1,0 +1,7 @@
+int32 startx
+int32 starty
+int32 goalx
+int32 goaly
+string id
+---
+int32 act

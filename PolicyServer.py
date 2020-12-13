@@ -24,11 +24,12 @@ from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 from Location import *
 from MDPSolver import *
-
+import floyd as floyd
 import sys, pickle
 import numpy as np
 import cv_bridge
 import cv2
+import os.path
 
 class PolicyServer(object):
 	def __init__(self):
@@ -37,6 +38,7 @@ class PolicyServer(object):
 		rospy.init_node(self.nodeName)
 		self.prev_index = None
 		self.index = 0
+		self.current = None
 
 		
 		self.polPack0 = self.loadPolicyPackage('0')
@@ -52,7 +54,7 @@ class PolicyServer(object):
 		self.setGoalSrv = rospy.Service('~SetCurrentGoal', SetCurrentGoal, self.setCurrentGoalByID)
 		self.getGoalSrv = rospy.Service('~GetGoalList', GetGoalList, self.getGoalList)
 		self.getActionSrv = rospy.Service('~GetAction', GetAction, self.getAction)
-
+		self.getActionMCTSSrv = rospy.Service('~GetActionMCTS', GetActionMCTS, self.getActionMCTS)
 		
 		#Publish maps and things
 		self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -63,12 +65,20 @@ class PolicyServer(object):
 
 		#self.publishDEM()
 		#self.publishHazmap()
-		self.setHazard('name')
+
 	   
 		#Subscribe to a PoseStamped topic for the current robot position
 		self.poseSub = rospy.Subscriber('state', RobotState, self.onNewPose)
 		
+		print('Solving Floyd Warshall')
+		if os.path.isfile('floydWarshallCosts.npy') == 0:
+			self.costmap, nextPlace = floyd.floyds(self.polPack0['hazmap'])
+			np.save('floydWarshallCosts', self.costmap)
+		else:
+			self.costmap = np.load('floydWarshallCosts.npy')
 
+
+		self.setHazard('name')
 		print 'Policy server ready!'
 
 	 
@@ -108,7 +118,6 @@ class PolicyServer(object):
 		#print 'Policy:', actionMap
 
 		#Get the current (scaled) position:
-		print self.polPack['scale']
 		scaledX = int(msg.pose.position.x * self.polPack['scale'])
 		scaledY = int(msg.pose.position.y * self.polPack['scale'])
 
@@ -197,6 +206,16 @@ class PolicyServer(object):
 
 		return steerAngle
 
+	def getActionMCTS(self,req):
+		if self.current == req.id:
+			pass
+		else:
+			self.ans_clean = self.solveGoal(self.polPack['hazmap'], [req.goalx,req.goaly])
+		steerAngle = self.ans_clean.solveMCTS([req.startx,req.starty],self.costmap,[req.goalx,req.goaly],1)
+		self.current = req.id
+
+		return steerAngle
+
 	def setCurrentGoalByID(self, req):
 		res = SetCurrentGoalResponse()
 
@@ -238,8 +257,8 @@ class PolicyServer(object):
 
 
 		return res
-		
-	def solveGoal(hazMap, goal):
+
+	def solveGoal(self,hazMap, goal):
 		ans = MDPSolver(modelName='HazmapModel', hazImg=hazMap, goal=goal);
 		ans.solve()
 		return ans

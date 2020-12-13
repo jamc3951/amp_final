@@ -240,17 +240,17 @@ class MDPSolver():
 		self.numActions = self.model.acts;
 
 		#Max solver time per action
-		self.maxTime = 1; #max time I spend searching
+		self.maxTime = 0.5; #max time I spend searching
 
 		#Exploration Constant
 		self.c = 1;  
 		self.goal = 20*goalLoc[0] + goalLoc[1]
 
-		print ('Goal:' , convertToGridCoords(self.goal,20,20))
+		#print ('Goal:' , convertToGridCoords(self.goal,20,20))
 		#Starting state
 		state = 20*start[0] + start[1]; 
 
-		print ('Start:' , convertToGridCoords(state,20,20))
+		#print ('Start:' , convertToGridCoords(state,20,20))
 		#Set max depth
 		maxDepth = 100; #breadth vs depth
 
@@ -259,36 +259,21 @@ class MDPSolver():
 		reward = 0
 		result = 0;
 		count = 0; 
+		goal = convertToGridCoords(self.goal,self.model.width,self.model.height)
+		s = convertToGridCoords(state,self.model.width,self.model.height)
+		d2g = self.costmap[goal[0]][goal[1]][s[0]][s[1]] #double flip this is correct
+		if d2g < 2:
+			self.c = 0
+			maxDepth = 1
+
+
 		while(count < 60):
 
 			h = Node(); 
 			act = self.search(state,h,maxDepth); #fake
-			state = self.generate_s(state, act); #actually move transition[h]
-			r = self.generate_r(state); #generate reward for that fake action
-			#print("State: {}, Action Taken: {}, Reward Gained: {}".format(convertToGridCoords(state,20,20),act,r));
+			
+			return act+1
 
-			x,y = convertToGridCoords(state,self.model.width,self.model.height)
-
-			state_list.append(float(state))
-			reward = reward + r
-			if goalLoc[0] == y and goalLoc[1] == x:
-				result = 1;
-				print("Goal Reached"); 
-				if MC == 1:
-					state_list.append(int(reward))
-				return reward,state_list,result
-
-
-			if self.isTerminal(state) == True:
-				print 'I have failed and I know it'
-				if MC == 1:
-					state_list.append(int(reward))
-				return reward,state_list,result
-
-			count = count + 1
-		if MC == 1:
-			state_list.append(int(reward))
-		return reward,state_list,result
 	def simulate(self, s, h, depth): #fake 
 
 
@@ -299,12 +284,14 @@ class MDPSolver():
 
 		#Add all possible actions to nodes children
 		if(len(h.children) == 0): 
-			for a in range(0,self.numActions):
+			for a in range(0,self.numActions-1):
 				h.addChildID(a)
 				h[a].N = 1; 
 
 
 		# find UCT algorithms suggested action
+		#act = 0
+		#while act != 0:
 		act = np.argmax([ha.Q + self.c*np.sqrt(np.log(h.N)/ha.N) for ha in h])
 
 		# generate s,r
@@ -312,12 +299,13 @@ class MDPSolver():
 		r = self.generate_r(sprime) #allowed to change
 
 		if self.isTerminal(sprime) == True:
+			h[act].Q += r
 			return r #maybe update nodes
 
 
 		# # if this is the first time you've seen this node
 		if(len(h[act].children) == 0):
-			for a in range(0,self.numActions):
+			for a in range(0,self.numActions-1):
 				h[act].addChildID(a); 
 				h[act][a].N = 1;
 			#return self.rollout(s,depth); #Choice here
@@ -341,16 +329,17 @@ class MDPSolver():
 
 		startTime = time.clock()
 
-		#while(time.clock()-startTime < self.maxTime): 
-		while(count < 1000):
+		while(time.clock()-startTime < self.maxTime): 
+		#while(count < 3000):
 			count += 1
 			self.simulate(s, h, depth)
+		#h[0].Q = -10000
 		#print([a.Q for a in h]); 
 		return np.argmax([a.Q for a in h]) #approximation of value function
 
 
 	def generate_s(self,s,act): #random choice with state and action
-		current = np.random.choice(range(self.model.N),p=self.model.px[act][s][:])
+		current = np.random.choice(range(self.model.N),p=self.model.px[act+1][s][:])
 
 		return current; 
 
@@ -381,7 +370,7 @@ class MDPSolver():
 				state_grid = convertToGridCoords(state,self.model.width,self.model.height)
 				d2g = self.costmap[goal[0]][goal[1]][state_grid[0]][state_grid[1]]
 				if d2g == np.inf or d2g == -np.inf:
-					guess.append(self.model.obstacleReward*5)
+					guess.append(self.model.obstacleReward)
 				else:
 					guess.append(self.model.goalReward - np.abs(d2g*self.model.stationaryReward))
 			#exclude states that hit obtacles
@@ -406,7 +395,7 @@ class MDPSolver():
 		if d2g == 0.0:
 			return self.model.goalReward*10
 		else:
-			return (self.model.goalReward - np.abs(d2g*self.model.stationaryReward)) #+self.model.goalReward; #Floyd-Warshall: what is the expected dist2goal based on sparse planning
+			return (self.model.goalReward - np.abs(d2g*self.model.stationaryReward*25)) ; #Floyd-Warshall: what is the expected dist2goal based on sparse planning
 
 def checkValue(ans):
 	plt.plot(ans.V)

@@ -59,7 +59,123 @@ class SimulationWindow(object):
 		self._goalLocations = [(0,0)]
 
 
-		self.subproblem = 1
+		self.subproblem = 4
+
+	def dynamicControllerMCTS(self):
+		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
+
+		tol = 20
+		p_goal = 0.05
+		nodes = 40
+		r = 40
+		scale = 0.005
+		path = []
+		nodes = []
+
+		start = self.allGoalsDict[self.allGoals[self.count-1][0]]
+		goal = (self._goal[1],self._goal[2],0)
+		size_x = [0, 4097]
+		size_y = [0, 4097]
+		size_theta = [0,2*math.pi]
+		obstacle_map = self.obstacle_map
+
+		print 'Running RRT'
+		#To make plot for only RRT
+		#rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,(start.x,start.y),goal,tol)
+		#plotMDP(obstacle_map,rrt_nodes,(start.x,start.y),goal,'Navigation Problem Using Only RRT')
+
+
+		#Make algorithm to put goal at policy recommendation
+		current_state = (int(start.y*scale), int(start.x*scale))
+		goal_state = (int(goal[1]*scale), int(goal[0]*scale))
+		current_location = (start.x,start.y,0)
+
+		while distance([current_location,0], [goal, 0]) > tol:
+			desired_state,steer = self.find_desired_stateMCTS(current_state, current_location, goal_state)
+
+			if desired_state == goal_state:
+				iter_goal = goal
+			else:
+				iter_goal = self.find_desired_goal(desired_state)
+				iter_goal = (iter_goal[0],iter_goal[1],0)
+
+			print 'Starting at: ' + str(current_location) + ' at ' + str(current_state)
+			print 'Navigating to: ' + str(iter_goal) + ' at ' + str(desired_state)
+			print 'Driving in direction: ' + str(steer)
+
+			rrt_nodes, pathList = kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,current_location,iter_goal,tol)
+			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'Navigation Problem Using Only RRT')
+			path.append(find_pathDyn(rrt_nodes,pathList,current_location,iter_goal))
+			nodes.append(rrt_nodes)
+
+			current_location = rrt_nodes[len(rrt_nodes)-1][0]
+			current_state = (int(current_location[1]*scale), int(current_location[0]*scale))
+
+			'''self.msg.pose.position.x = current_location[0]
+			self.msg.pose.position.y = current_location[1]
+			self.current_state_pub.publish(self.msg)'''
+
+		#Plot Path
+		print ('Reached Goal')
+		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MDP with Low Level Kinematic')
+
+	def dynamicController(self):
+		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
+
+		tol = 20
+		p_goal = 0.05
+		nodes = 40
+		r = 40
+		scale = 0.005
+		path = []
+		nodes = []
+
+		start = self.allGoalsDict[self.allGoals[self.count-1][0]]
+		goal = (self._goal[1],self._goal[2],0)
+		size_x = [0, 4097]
+		size_y = [0, 4097]
+		size_theta = [0,2*math.pi]
+		obstacle_map = self.obstacle_map
+
+		print 'Running RRT'
+		#To make plot for only RRT
+		#rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,(start.x,start.y),goal,tol)
+		#plotMDP(obstacle_map,rrt_nodes,(start.x,start.y),goal,'Navigation Problem Using Only RRT')
+
+
+		#Make algorithm to put goal at policy recommendation
+		current_state = (int(start.y*scale), int(start.x*scale))
+		goal_state = (int(goal[1]*scale), int(goal[0]*scale))
+		current_location = (start.x,start.y,0)
+
+		while distance([current_location,0], [goal, 0]) > tol:
+			desired_state,steer = self.find_desired_state(current_state, current_location)
+
+			if desired_state == goal_state:
+				iter_goal = goal
+			else:
+				iter_goal = self.find_desired_goal(desired_state)
+				iter_goal = (iter_goal[0],iter_goal[1],0)
+
+			print 'Starting at: ' + str(current_location) + ' at ' + str(current_state)
+			print 'Navigating to: ' + str(iter_goal) + ' at ' + str(desired_state)
+			print 'Driving in direction: ' + str(steer)
+
+			rrt_nodes, pathList = kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,current_location,iter_goal,tol)
+			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'Navigation Problem Using Only RRT')
+			path.append(find_pathDyn(rrt_nodes,pathList,current_location,iter_goal))
+			nodes.append(rrt_nodes)
+
+			current_location = rrt_nodes[len(rrt_nodes)-1][0]
+			current_state = (int(current_location[1]*scale), int(current_location[0]*scale))
+
+			'''self.msg.pose.position.x = current_location[0]
+			self.msg.pose.position.y = current_location[1]
+			self.current_state_pub.publish(self.msg)'''
+
+		#Plot Path
+		print ('Reached Goal')
+		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MDP with Low Level Kinematic')
 
 	def controller(self):
 		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
@@ -117,6 +233,62 @@ class SimulationWindow(object):
 		print ('Reached Goal')
 		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'RRT via MDP Solved with VI')
 
+	def controllerMCTS(self):
+		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
+
+		tol = 15
+		p_goal = 0.05
+		nodes = 5000
+		r = 10
+		scale = 0.005
+		path = []
+		nodes = []
+
+		start = self.allGoalsDict[self.allGoals[self.count-1][0]]
+		goal = (self._goal[1],self._goal[2])
+		size_x = [0, 4097]
+		size_y = [0, 4097]
+		obstacle_map = self.obstacle_map
+
+		print 'Running RRT'
+		#To make plot for only RRT
+		#rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,(start.x,start.y),goal,tol)
+		#plotMDP(obstacle_map,rrt_nodes,(start.x,start.y),goal,'Navigation Problem Using Only RRT')
+
+
+		#Make algorithm to put goal at policy recommendation
+		current_state = (int(start.y*scale), int(start.x*scale))
+		goal_state = (int(goal[1]*scale), int(goal[0]*scale))
+		current_location = (start.x,start.y)
+
+		while distance([current_location,0], [goal, 0]) > tol:
+			desired_state,steer = self.find_desired_stateMCTS(current_state, current_location, goal_state)
+
+			if desired_state == goal_state:
+				iter_goal = goal
+			else:
+				iter_goal = self.find_desired_goal(desired_state)
+
+			print 'Starting at: ' + str(current_location) + ' at ' + str(current_state)
+			print 'Navigating to: ' + str(iter_goal) + ' at ' + str(desired_state)
+			print 'Driving in direction: ' + str(steer)
+
+			rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,current_location,iter_goal,tol)
+			#plotIterMDP(obstacle_map,rrt_nodes,current_location,iter_goal,goal,self._goalID, 'Iterative RRT via MDP Solved with VI')
+			path.append(find_path(rrt_nodes,current_location,iter_goal))
+			nodes.append(rrt_nodes)
+
+			current_location = rrt_nodes[len(rrt_nodes)-1][0]
+			current_state = (int(current_location[1]*scale), int(current_location[0]*scale))
+
+			'''self.msg.pose.position.x = current_location[0]
+			self.msg.pose.position.y = current_location[1]
+			self.current_state_pub.publish(self.msg)'''
+
+		#Plot Path
+		print ('Reached Goal')
+		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'RRT via MDP Solved with VI')
+
 	def getGoals_client(self):
 		try:
 			goal = rospy.ServiceProxy('/policy/policy_server/GetGoalList', GetGoalList)
@@ -131,6 +303,16 @@ class SimulationWindow(object):
 		try:
 			goal = rospy.ServiceProxy('/policy/policy_server/GetAction', GetAction)
 			response = goal(x,y)
+			act = response.act
+
+			return act
+		except rospy.ServiceException, e:
+			print "Service call failed: %s"%e
+
+	def getActionMCTS_client(self,x1,y1,x2,y2,goalID):
+		try:
+			goal = rospy.ServiceProxy('/policy/policy_server/GetActionMCTS', GetActionMCTS)
+			response = goal(x1,y1,x2,y2,goalID)
 			act = response.act
 
 			return act
@@ -153,6 +335,31 @@ class SimulationWindow(object):
 
 	def find_desired_state(self,current_state, current_location):
 		steer = self.getAction_client(current_location[0],current_location[1])
+
+		if(steer == 1):
+			desired_state = (current_state[0]-1,current_state[1])
+		elif(steer == 2):
+			desired_state = (current_state[0]-1,current_state[1]+1)
+		elif(steer == 3):
+			desired_state = (current_state[0],current_state[1]+1)
+		elif(steer == 4):
+			desired_state = (current_state[0]+1,current_state[1]+1)
+		elif(steer == 5):
+			desired_state = (current_state[0]+1,current_state[1])
+		elif(steer == 6):
+			desired_state = (current_state[0]+1,current_state[1]-1)
+		elif(steer == 7):
+			desired_state = (current_state[0],current_state[1]-1)
+		elif(steer == 8):
+			desired_state = (current_state[0]-1,current_state[1]-1)
+		else:
+			#We've arrived at the goal - don't publish a new steer
+			return
+
+		return desired_state, steer
+
+	def find_desired_stateMCTS(self,current_state, current_location, goal_state):
+		steer = self.getActionMCTS_client(current_state[0],current_state[1], goal_state[0],goal_state[1],self._goalID)
 
 		if(steer == 1):
 			desired_state = (current_state[0]-1,current_state[1])
@@ -278,7 +485,6 @@ class SimulationWindow(object):
 		hazTrans = QImage(self.hazmapImage.width(), self.hazmapImage.height(), QImage.Format_ARGB32)
 		#hazTrans.fill(Qt.transparent)
 		grid_size = float(4097)/float(20)
-		print grid_size
 
 		for row in range(0, self.hazmapImage.height()):
 			for col in range(0, self.hazmapImage.width()):
@@ -306,7 +512,12 @@ class SimulationWindow(object):
 		#self.hazmapItem.setTransform(trans)
 		if self.subproblem == 1:
 			self.controller()
-
+		if self.subproblem == 2:
+			self.controllerMCTS()
+		if self.subproblem == 3:
+			self.dynamicController()
+		if self.subproblem == 4:
+			self.dynamicControllerMCTS()
 		
 	def dem_cb(self, msg):
 

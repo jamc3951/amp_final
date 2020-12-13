@@ -34,6 +34,7 @@ add_service_files(
   GetGoalList.srv
   SetCurrentGoal.srv
   GetAction.srv
+  GetActionMCTS.srv
 )
 
 ## System dependencies are found with CMake's conventions
