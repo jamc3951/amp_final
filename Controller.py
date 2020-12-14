@@ -14,7 +14,7 @@ from sensor_msgs.msg import *
 from plane_functions import *
 from rrt import *
 import numpy as np
-
+import time
 import cv2
 import copy
 import matplotlib.pyplot as plt
@@ -59,7 +59,7 @@ class SimulationWindow(object):
 		self._goalLocations = [(0,0)]
 
 
-		self.subproblem = 4
+		self.subproblem = 3
 
 	def dynamicControllerMCTS(self):
 		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
@@ -104,7 +104,7 @@ class SimulationWindow(object):
 			print 'Driving in direction: ' + str(steer)
 
 			rrt_nodes, pathList = kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,current_location,iter_goal,tol)
-			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'Navigation Problem Using Only RRT')
+			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'Iterative Low Level First Order RRT Guided by MCTS')
 			path.append(find_pathDyn(rrt_nodes,pathList,current_location,iter_goal))
 			nodes.append(rrt_nodes)
 
@@ -117,7 +117,7 @@ class SimulationWindow(object):
 
 		#Plot Path
 		print ('Reached Goal')
-		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MDP with Low Level Kinematic')
+		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MCTS Guided First Order RRT')
 
 	def dynamicController(self):
 		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
@@ -129,6 +129,8 @@ class SimulationWindow(object):
 		scale = 0.005
 		path = []
 		nodes = []
+		solution_time = []
+		control_time = []
 
 		start = self.allGoalsDict[self.allGoals[self.count-1][0]]
 		goal = (self._goal[1],self._goal[2],0)
@@ -161,21 +163,26 @@ class SimulationWindow(object):
 			print 'Navigating to: ' + str(iter_goal) + ' at ' + str(desired_state)
 			print 'Driving in direction: ' + str(steer)
 
-			rrt_nodes, pathList = kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,current_location,iter_goal,tol)
-			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'Navigation Problem Using Only RRT')
+			t1 = time.time()
+			rrt_nodes, pathList, controls = kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,current_location,iter_goal,tol)
+			t2 = time.time()
+			#plotIterDynMDP(obstacle_map, rrt_nodes, pathList, current_location, iter_goal, goal,self._goalID, 'High Level MDP with Low Level Kinematic RRT')
 			path.append(find_pathDyn(rrt_nodes,pathList,current_location,iter_goal))
 			nodes.append(rrt_nodes)
 
 			current_location = rrt_nodes[len(rrt_nodes)-1][0]
 			current_state = (int(current_location[1]*scale), int(current_location[0]*scale))
-
+			solution_time.append(t2 - t1)
+			control_time.append(controls[1])
 			'''self.msg.pose.position.x = current_location[0]
 			self.msg.pose.position.y = current_location[1]
 			self.current_state_pub.publish(self.msg)'''
 
 		#Plot Path
 		print ('Reached Goal')
-		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MDP with Low Level Kinematic')
+		print solution_time
+		print control_time
+		plotOverallDynMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'High Level MDP with Low Level Kinematic RRT')
 
 	def controller(self):
 		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
@@ -218,7 +225,7 @@ class SimulationWindow(object):
 			print 'Driving in direction: ' + str(steer)
 
 			rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,current_location,iter_goal,tol)
-			#plotIterMDP(obstacle_map,rrt_nodes,current_location,iter_goal,goal,self._goalID, 'Iterative RRT via MDP Solved with VI')
+			plotIterMDP(obstacle_map,rrt_nodes,current_location,iter_goal,goal,self._goalID, 'Iterative RRT via MDP Solved with VI')
 			path.append(find_path(rrt_nodes,current_location,iter_goal))
 			nodes.append(rrt_nodes)
 
@@ -231,7 +238,7 @@ class SimulationWindow(object):
 
 		#Plot Path
 		print ('Reached Goal')
-		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'RRT via MDP Solved with VI')
+		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'Iterative RRT via MDP Solved with VI')
 
 	def controllerMCTS(self):
 		#obstacle_map,size_x,size_y,nodes,r,p_goal,start,goal,tol
@@ -274,7 +281,7 @@ class SimulationWindow(object):
 			print 'Driving in direction: ' + str(steer)
 
 			rrt_nodes = rrt_algorithm(obstacle_map,size_x,size_y,nodes,r,p_goal,current_location,iter_goal,tol)
-			#plotIterMDP(obstacle_map,rrt_nodes,current_location,iter_goal,goal,self._goalID, 'Iterative RRT via MDP Solved with VI')
+			plotIterMDP(obstacle_map,rrt_nodes,current_location,iter_goal,goal,self._goalID, 'Iterative RRT via MDP Guided by MCTS')
 			path.append(find_path(rrt_nodes,current_location,iter_goal))
 			nodes.append(rrt_nodes)
 
@@ -287,7 +294,7 @@ class SimulationWindow(object):
 
 		#Plot Path
 		print ('Reached Goal')
-		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'RRT via MDP Solved with VI')
+		plotOverallMDP(obstacle_map,nodes,path,(start.x,start.y),goal,self._goalID, 'Iterative RRT via MDP Solved with MCTS')
 
 	def getGoals_client(self):
 		try:

@@ -212,7 +212,7 @@ def plotIterMDP(obstacle_map, rrt_nodes, start, itergoal, goal,goalID, title):
 	plt.ylabel('Y [Units]')
 	plt.ylim(4097, 0)
 	plt.xlim(0, 4097)
-	
+	plt.grid()
 	for item in rrt_nodes:
 		plt.plot(item[0][0],item[0][1],'r.')
 
@@ -245,7 +245,7 @@ def plotOverallMDP(obstacle_map, rrt_nodes, path, start, goal,goalID, title):
 	plt.ylabel('Y [Units]')
 	plt.ylim(4097, 0)
 	plt.xlim(0, 4097)
-
+	plt.grid()
 	for iterem in rrt_nodes:
 		for item in iterem:
 			plt.plot(item[0][0],item[0][1],'r.')
@@ -345,13 +345,13 @@ def kinematic_rrt(obstacle_map,size_x,size_y,size_theta,nodes,r,p_goal,start,goa
 
 		#check for goal
 		if distance(rrt_nodes[len(rrt_nodes)-1], [goal, 0]) < tol:
-			return rrt_nodes, pathList
+			return rrt_nodes, pathList, controls
 
 		count = count + 1
 
 
 	print 'Fail'
-	return rrt_nodes, pathList
+	return rrt_nodes, pathList, controls
 
 def findValidSubTraj(obstacle_map,guess,new_pt,u_v,u_phi,size_x,size_y):
 	t = np.linspace(0,10,num=20)
@@ -393,7 +393,7 @@ def findValidSubTraj(obstacle_map,guess,new_pt,u_v,u_phi,size_x,size_y):
 
 			d.append(node)
 			indeces.append(index)
-			u.append(control_sample)
+			u.append([control_sample,path[index][1]])
 			pathList.append(path[0:index])
 	distd = 1000000
 	if len(pathList) > 0:
@@ -524,7 +524,7 @@ def plotIterDynMDP(obstacle_map, rrt_nodes, pathList, start, itergoal, goal,goal
 	plt.ylabel('Y [Units]')
 	plt.ylim(4097, 0)
 	plt.xlim(0, 4097)
-	
+	plt.grid()
 	for item in rrt_nodes:
 		plt.plot(item[0][0],item[0][1],'r.')
 
@@ -560,7 +560,7 @@ def plotOverallDynMDP(obstacle_map, rrt_nodes, path, start, goal,goalID, title):
 	plt.ylabel('Y [Units]')
 	plt.ylim(4097, 0)
 	plt.xlim(0, 4097)
-
+	plt.grid()
 	for iterem in rrt_nodes:
 		for item in iterem:
 			plt.plot(item[0][0],item[0][1],'r.')
